@@ -1,0 +1,457 @@
+syntax = "proto3";
+
+package krista.ui.agent;
+
+option java_package = "app.krista.extension.uiautomationagent.proto";
+option java_outer_classname = "UiAgentMessagesProto";
+option java_multiple_files = true;
+
+import "google/protobuf/timestamp.proto";
+
+// ============================================================================
+// Common Types
+// ============================================================================
+
+/**
+ * Extension identity information for multi-extension isolation
+ */
+message ExtensionIdentity {
+  string extension_id = 1;        // Unique extension identifier (e.g., "ext-abc-123")
+  string extension_name = 2;      // Human-readable name (e.g., "Sales Assistant")
+  string extension_version = 3;   // Extension version (e.g., "1.0.0")
+  string user_id = 4;             // User who owns this extension instance
+  string team_id = 5;             // Team/organization identifier
+}
+
+/**
+ * Browser and automation configuration (DEPRECATED - use UserConfiguration instead)
+ * Kept for backward compatibility
+ */
+message Configuration {
+  bool headless = 1;              // Run browser in headless mode
+  int32 timeout = 2;              // Default timeout in milliseconds
+  string browser = 3;             // Browser type: "chromium", "firefox", "webkit"
+  string model = 4;               // LLM model to use
+  string fallback_model = 5;      // Fallback LLM model
+  map<string, string> extra = 6; // Additional configuration key-value pairs
+}
+
+/**
+ * LLM provider configuration
+ */
+message ProviderConfig {
+  string api_key = 1;                    // API key for this provider
+  optional string base_url = 2;          // Custom base URL (for self-hosted models)
+  optional int32 timeout_ms = 3;         // Request timeout in milliseconds
+  optional string default_model = 4;     // Default model for this provider
+  map<string, string> headers = 5;       // Custom HTTP headers
+  map<string, string> extra = 6;         // Additional provider-specific settings
+}
+
+/**
+ * LLM configuration
+ */
+message LLMConfiguration {
+  string primary_model = 1;              // Primary LLM model (e.g., "gpt-4o")
+  string fallback_model = 2;             // Fallback LLM model (e.g., "gpt-4o-mini")
+  optional float temperature = 3;        // Temperature for LLM responses (0.0-2.0)
+  optional int32 max_tokens = 4;         // Maximum tokens for LLM responses
+  map<string, ProviderConfig> providers = 5; // Provider configurations (openai, anthropic, etc.)
+}
+
+/**
+ * Browser execution preferences
+ */
+message BrowserConfiguration {
+  optional string user_agent = 1;        // Custom user agent
+  optional string locale = 2;            // Browser locale (e.g., "en-US")
+  optional string timezone = 3;          // Browser timezone
+  optional bool screenshot_on_error = 4; // Take screenshot on errors
+  optional string screenshot_format = 5; // Screenshot format ("png", "jpeg")
+  map<string, string> extra = 6;         // Additional browser settings
+}
+
+/**
+ * Session defaults
+ */
+message SessionDefaults {
+  optional int32 timeout_ms = 1;         // Session timeout in milliseconds
+  optional int32 max_retries = 2;        // Maximum retry attempts
+  optional bool keep_alive = 3;          // Keep session alive after execution
+  map<string, string> extra = 4;         // Additional session settings
+
+  // Validation settings
+  optional bool enable_validations = 5;           // Enable/disable validations (default: true)
+  optional bool fail_on_validation_error = 6;     // Fail execution if validation fails (default: true)
+  optional bool capture_validation_screenshots = 7; // Capture screenshots on validation failure (default: true)
+
+  // Profiling settings
+  optional bool enable_profiling = 8;             // Enable session profiling (default: true)
+}
+
+/**
+ * Complete user configuration (sent from extension to service)
+ */
+message UserConfiguration {
+  string config_version = 1;             // Configuration version (e.g., "1.0")
+  LLMConfiguration llm = 2;              // LLM configuration
+  BrowserConfiguration browser = 3;      // Browser configuration
+  SessionDefaults session = 4;           // Session configuration (renamed from SessionConfiguration)
+  map<string, string> extra = 5;         // Additional configuration
+}
+
+/**
+ * Execution status enum
+ */
+enum ExecutionStatus {
+  STATUS_UNKNOWN = 0;
+  SUCCESS = 1;
+  ERROR = 2;
+  TIMEOUT = 3;
+  VALIDATION_ERROR = 4;
+  RESOURCE_LIMIT_EXCEEDED = 5;
+  ACCESS_DENIED = 6;
+  SESSION_NOT_FOUND = 7;           // Session doesn't exist
+  EXTENSION_NOT_REGISTERED = 8;    // Extension not registered in registry
+  INVALID_CONFIGURATION = 9;       // Configuration validation failed
+  CONNECTION_ERROR = 10;            // ESB/Network connection error
+  BROWSER_ERROR = 11;               // Browser automation error
+  SERIALIZATION_ERROR = 12;         // Protobuf serialization/deserialization error
+  FILE_NOT_FOUND = 13;              // File not found in session directory
+  FILE_DELETE_ERROR = 14;           // Failed to delete file
+}
+
+// ============================================================================
+// Session Management Messages
+// ============================================================================
+
+/**
+ * Request to start a new browser session
+ */
+message SessionStartRequest {
+  string request_id = 1;                    // Unique request identifier
+  ExtensionIdentity extension = 2;          // Extension identity
+  string session_id = 3;                    // OPTIONAL: Client-provided session ID
+  Configuration config = 4;                 // DEPRECATED: Legacy configuration (for backward compatibility)
+  google.protobuf.Timestamp timestamp = 5;  // Request timestamp
+  optional UserConfiguration user_config = 6; // NEW: Per-extension user configuration
+  optional string workspace_id = 7;         // Workspace identifier for media server uploads
+  optional string account_id = 8;           // Account identifier for media server uploads
+}
+
+/**
+ * Response to session start request
+ */
+message SessionStartResponse {
+  string request_id = 1;                    // Matches request_id from request
+  string session_id = 2;                    // Assigned or validated session ID
+  bool ok = 3;                              // Success flag (true if status == SUCCESS)
+  ExecutionStatus status = 4;               // Execution status
+  string message = 5;                       // Human-readable message
+  google.protobuf.Timestamp timestamp = 6;  // Response timestamp
+  int32 max_concurrent_sessions = 7;        // Extension's session limit
+  int32 current_session_count = 8;          // Current active sessions for this extension
+}
+
+/**
+ * Request to close a browser session
+ */
+message SessionCloseRequest {
+  string request_id = 1;                    // Unique request identifier
+  ExtensionIdentity extension = 2;          // Extension identity
+  string session_id = 3;                    // Session to close
+  google.protobuf.Timestamp timestamp = 4;  // Request timestamp
+  optional string workspace_id = 5;         // Workspace identifier for media server uploads
+  optional string account_id = 6;           // Account identifier for media server uploads
+}
+
+/**
+ * Response to session close request
+ */
+message SessionCloseResponse {
+  string request_id = 1;                    // Matches request_id from request
+  string session_id = 2;                    // Closed session ID
+  bool ok = 3;                              // Success flag (true if status == SUCCESS)
+  ExecutionStatus status = 4;               // Execution status
+  string message = 5;                       // Human-readable message
+  google.protobuf.Timestamp timestamp = 6;  // Response timestamp
+  optional string profiling_zip_url = 7;    // Download URL for profiling ZIP file (if profiling enabled)
+}
+
+/**
+ * Heartbeat request to keep session alive
+ */
+message SessionHeartbeatRequest {
+  string request_id = 1;                    // Unique request identifier
+  ExtensionIdentity extension = 2;          // Extension identity
+  string session_id = 3;                    // Session to keep alive
+  google.protobuf.Timestamp timestamp = 4;  // Request timestamp
+  optional string workspace_id = 5;         // Workspace identifier for media server uploads
+  optional string account_id = 6;           // Account identifier for media server uploads
+}
+
+/**
+ * Heartbeat response
+ */
+message SessionHeartbeatResponse {
+  string request_id = 1;                    // Matches request_id from request
+  string session_id = 2;                    // Session ID
+  bool ok = 3;                              // Success flag (true if status == SUCCESS)
+  ExecutionStatus status = 4;               // Execution status
+  int64 time_remaining_ms = 5;              // Time until session timeout (milliseconds)
+  google.protobuf.Timestamp timestamp = 6;  // Response timestamp
+}
+
+// ============================================================================
+// Prompt Execution Messages
+// ============================================================================
+
+/**
+ * Request to execute a prompt (single-shot mode)
+ */
+message PromptExecuteRequest {
+  string request_id = 1;                    // Unique request identifier
+  ExtensionIdentity extension = 2;          // Extension identity
+  string prompt = 3;                        // Natural language prompt
+  Configuration config = 4;                 // DEPRECATED: Legacy configuration (for backward compatibility)
+  google.protobuf.Timestamp timestamp = 5;  // Request timestamp
+  optional UserConfiguration user_config = 6; // NEW: Per-extension user configuration
+  optional string workspace_id = 7;         // Workspace identifier for media server uploads
+  optional string account_id = 8;           // Account identifier for media server uploads
+}
+
+/**
+ * Response to prompt execution (single-shot mode)
+ */
+message PromptExecuteResponse {
+  string request_id = 1;                    // Matches request_id from request
+  bool ok = 2;                              // Success flag (true if status == SUCCESS)
+  ExecutionStatus status = 3;               // Execution status
+  ExecutionResult result = 4;               // Execution result
+  google.protobuf.Timestamp timestamp = 5;  // Response timestamp
+}
+
+/**
+ * Request to execute a command in an existing session
+ */
+message SessionExecuteRequest {
+  string request_id = 1;                    // Unique request identifier
+  ExtensionIdentity extension = 2;          // Extension identity
+  string session_id = 3;                    // Session to execute in
+  string prompt = 4;                        // Natural language prompt/command
+  Configuration config = 5;                 // DEPRECATED: Legacy configuration (for backward compatibility)
+  google.protobuf.Timestamp timestamp = 6;  // Request timestamp
+  optional UserConfiguration user_config = 7; // NEW: Per-extension user configuration (overrides session config)
+  optional string workspace_id = 8;         // Workspace identifier for media server uploads
+  optional string account_id = 9;           // Account identifier for media server uploads
+}
+
+/**
+ * Response to session execution
+ */
+message SessionExecuteResponse {
+  string request_id = 1;                    // Matches request_id from request
+  string session_id = 2;                    // Session ID
+  bool ok = 3;                              // Success flag (true if status == SUCCESS)
+  ExecutionStatus status = 4;               // Execution status
+  ExecutionResult result = 5;               // Execution result
+  google.protobuf.Timestamp timestamp = 6;  // Response timestamp
+}
+
+// ============================================================================
+// File Management Messages
+// ============================================================================
+
+/**
+ * Request to delete a file from session directory
+ */
+message FileDeleteRequest {
+  string request_id = 1;                    // Unique request identifier
+  ExtensionIdentity extension = 2;          // Extension identity
+  string session_id = 3;                    // Session ID
+  string filename = 4;                      // Filename to delete
+  google.protobuf.Timestamp timestamp = 5;  // Request timestamp
+  optional string workspace_id = 6;         // Workspace identifier
+  optional string account_id = 7;           // Account identifier
+}
+
+/**
+ * Response to file delete request
+ */
+message FileDeleteResponse {
+  string request_id = 1;                    // Matches request_id from request
+  string session_id = 2;                    // Session ID
+  string filename = 3;                      // Deleted filename
+  bool ok = 4;                              // Success flag (true if status == SUCCESS)
+  ExecutionStatus status = 5;               // Execution status
+  string message = 6;                       // Human-readable message
+  google.protobuf.Timestamp timestamp = 7;  // Response timestamp
+}
+
+/**
+ * Request to list files in session directory
+ */
+message FileListRequest {
+  string request_id = 1;                    // Unique request identifier
+  ExtensionIdentity extension = 2;          // Extension identity
+  string session_id = 3;                    // Session ID
+  google.protobuf.Timestamp timestamp = 4;  // Request timestamp
+  optional string workspace_id = 5;         // Workspace identifier
+  optional string account_id = 6;           // Account identifier
+}
+
+/**
+ * Response to file list request
+ */
+message FileListResponse {
+  string request_id = 1;                    // Matches request_id from request
+  string session_id = 2;                    // Session ID
+  bool ok = 3;                              // Success flag (true if status == SUCCESS)
+  ExecutionStatus status = 4;               // Execution status
+  repeated DownloadedFile files = 5;        // List of files in session directory
+  int32 total_count = 6;                    // Total number of files
+  int64 total_size_bytes = 7;               // Total size of all files
+  google.protobuf.Timestamp timestamp = 8;  // Response timestamp
+}
+
+// ============================================================================
+// Execution Result Types
+// ============================================================================
+
+/**
+ * Execution result containing steps and outputs
+ */
+message ExecutionResult {
+  repeated ExecutionStep steps = 1;         // Execution steps performed
+  string final_output = 2;                  // Final output/result
+  repeated Screenshot screenshots = 3;      // Screenshot metadata (changed from string array to Screenshot objects)
+  repeated DownloadedFile downloads = 4;    // Downloaded files
+  map<string, string> metadata = 5;         // Additional metadata
+  string error_message = 6;                 // Error message if status is ERROR
+
+  // Validation results (post-execution verification)
+  repeated ValidationResult validations = 7;  // Validation results
+  bool validation_failed = 8;                 // True if any validation failed
+  string validation_error = 9;                // Summary of validation failures
+}
+
+/**
+ * Individual execution step
+ */
+message ExecutionStep {
+  string action = 1;                        // Action type (e.g., "click", "fill", "navigate")
+  string selector = 2;                      // Element selector (if applicable)
+  string value = 3;                         // Value used (if applicable)
+  string result = 4;                        // Step result
+  bool success = 5;                         // Whether step succeeded
+  string error = 6;                         // Error message if failed
+  google.protobuf.Timestamp timestamp = 7;  // Step timestamp
+  string prompt = 8;                        // Original prompt text for this step
+  int32 step_number = 9;                    // Step index (1-based)
+}
+
+/**
+ * Screenshot metadata
+ */
+message Screenshot {
+  int32 step = 1;                           // Step number
+  string step_text = 2;                     // Original prompt text for this step
+  string action = 3;                        // Action type (e.g., "click", "navigate")
+  string filename = 4;                      // Screenshot filename
+  string path = 5;                          // Full file path on server
+  string download_url = 6;                  // HMAC-signed download URL
+  google.protobuf.Timestamp timestamp = 7;  // When screenshot was taken
+  int64 size_bytes = 8;                     // File size in bytes
+}
+
+/**
+ * Downloaded file information
+ */
+message DownloadedFile {
+  string filename = 1;                      // Original filename
+  string path = 2;                          // DEPRECATED: Relative path in results directory (use download_url instead)
+  int64 size_bytes = 3;                     // File size in bytes
+  string mime_type = 4;                     // MIME type
+  google.protobuf.Timestamp downloaded_at = 5; // Download timestamp
+
+  // NEW: HMAC-signed download URL (replaces inline content)
+  optional string download_url = 6;         // HMAC-signed download URL (if HMAC enabled)
+}
+
+/**
+ * Validation step for post-execution verification
+ */
+message ValidationStep {
+  string validation_type = 1;               // Type: "url", "element_exists", "element_visible", "text_content", etc.
+  string target = 2;                        // Element selector (if applicable)
+  string expected_value = 3;                // Expected value
+  string comparison = 4;                    // Comparison type: "equals", "contains", "matches", "exists", "not_exists"
+  optional string attribute = 5;            // Attribute name (for attribute validations)
+  optional int32 expected_count = 6;        // Expected count (for count validations)
+}
+
+/**
+ * Result of a validation step
+ */
+message ValidationResult {
+  int32 step = 1;                           // Validation step number
+  string validation_type = 2;               // Type of validation
+  string validation_prompt = 3;             // Original validation prompt text (e.g., "Verify that the page title contains 'Welcome'")
+  bool passed = 4;                          // Whether validation passed
+  string expected = 5;                      // What was expected
+  string actual = 6;                        // What was actually found
+  string error_message = 7;                 // Error message if failed
+  optional Screenshot screenshot = 8;       // Screenshot at time of validation (if failed)
+  google.protobuf.Timestamp timestamp = 9;  // When validation was executed
+}
+
+// ============================================================================
+// Notification Messages (Service -> Extension)
+// ============================================================================
+
+/**
+ * Session timeout warning notification
+ */
+message SessionTimeoutWarning {
+  string session_id = 1;                    // Session approaching timeout
+  string extension_id = 2;                  // Extension that owns the session
+  int64 time_remaining_ms = 3;              // Time until timeout (milliseconds)
+  google.protobuf.Timestamp timestamp = 4;  // Notification timestamp
+}
+
+/**
+ * Session terminated notification
+ */
+message SessionTerminated {
+  string session_id = 1;                    // Terminated session ID
+  string extension_id = 2;                  // Extension that owned the session
+  string reason = 3;                        // Termination reason
+  google.protobuf.Timestamp timestamp = 4;  // Notification timestamp
+}
+
+/**
+ * Resource limit warning notification
+ */
+message ResourceLimitWarning {
+  string extension_id = 1;                  // Extension approaching limit
+  string resource_type = 2;                 // Resource type (e.g., "concurrent_sessions")
+  int32 current_usage = 3;                  // Current usage
+  int32 limit = 4;                          // Maximum limit
+  google.protobuf.Timestamp timestamp = 5;  // Notification timestamp
+}
+
+// ============================================================================
+// Error Messages
+// ============================================================================
+
+/**
+ * Error response for any failed request
+ */
+message ErrorResponse {
+  string request_id = 1;                    // Matches request_id from request
+  string error_code = 2;                    // Error code (e.g., "SESSION_NOT_FOUND")
+  string error_message = 3;                 // Human-readable error message
+  map<string, string> details = 4;          // Additional error details
+  google.protobuf.Timestamp timestamp = 5;  // Error timestamp
+}
+

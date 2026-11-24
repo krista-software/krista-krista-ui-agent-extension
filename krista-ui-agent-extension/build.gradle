@@ -1,0 +1,180 @@
+plugins {
+    id 'java-library'
+    id 'com.google.protobuf' version '0.9.4'
+}
+
+group = 'com.kristasoft.extensions.customer.default'
+version = '1.0.0'
+
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(21))
+    }
+}
+
+
+// Keep the task to copy Node.js code to resources (without node_modules)
+tasks.register('copyNodeCodeToResources', Copy) {
+    def nodeDir = file("$projectDir/src/main/node")
+    
+    // Exclude node_modules as they will be installed at runtime
+    from(nodeDir) {
+        exclude 'node_modules/**'
+    }
+    into "$projectDir/src/main/resources/node"
+}
+
+// Copy Java sources for packaging
+tasks.register("includeSources", Copy) {
+    from("src/main/java")
+    into("$buildDir/classes/java/main/META-INF/project/src")
+}
+
+// Ensure compileTestJava runs after includeSources
+tasks.named('compileTestJava') {
+    dependsOn 'includeSources'
+}
+
+// Package Node and Java sources into JAR
+tasks.jar {
+    dependsOn 'copyNodeCodeToResources', 'includeSources'
+    from {
+        configurations.runtimeClasspath.findAll { it.exists() }.collect {
+            it.isDirectory() ? it : zipTree(it)
+        }
+    }
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    exclude 'META-INF/*.RSA', 'META-INF/*.SF', 'META-INF/*.DSA'
+
+    // Exclude Node.js binary to reduce JAR size (98 MB!)
+    // Node.js will be installed at runtime via NodeManager
+    exclude 'bin/node'
+    exclude 'bin/node.exe'
+
+    // Optional: Exclude documentation from dependencies (but keep our docs/ directory)
+    exclude { details ->
+        def path = details.file.path
+        def isMarkdown = path.endsWith('.md') || path.endsWith('.MD')
+        def isOurDocs = path.contains('/docs/') && (path.contains('README.md') || path.contains('_sidebar.md') || path.contains('/pages/'))
+
+        // Exclude markdown files EXCEPT those in our docs directory
+        return isMarkdown && !isOurDocs
+    }
+    exclude { details ->
+        def path = details.file.path
+        def name = details.file.name
+        def isOurDocs = path.contains('/docs/')
+
+        // Exclude README, CHANGELOG, LICENSE, NOTICE from dependencies but not from our docs
+        return (name.startsWith('README') || name.startsWith('CHANGELOG') ||
+                name.startsWith('LICENSE') || name.startsWith('NOTICE')) && !isOurDocs
+    }
+}
+
+// Version bump task (optional)
+tasks.register("updateVersion") {
+    doFirst {
+        def buildNumberFile = rootProject.file('build-nr.txt')
+        def buildNr = buildNumberFile.canRead() ? buildNumberFile.text.trim() : "0"
+        def newBuildNr = Integer.parseInt(buildNr) + 1
+        println "Building extension version: ${version}-${newBuildNr}"
+        buildNumberFile.text = newBuildNr
+        System.setProperty("extensionVersion", "${version}-${newBuildNr}")
+    }
+}
+
+// Compile Java after setup
+tasks.compileJava {
+    dependsOn 'clean', 'updateVersion'
+}
+
+
+repositories {
+    maven {
+        url "https://extension.qa-in.eng.krista.app/extension/api/_sKApj4hpezeJi5JVY4DMLg_e_e/rest/repository"
+    }
+    maven {
+        url "https://packages.cicd.in.antbrains.com/artifactory/libs-release"
+    }
+    mavenCentral()
+    mavenLocal()
+}
+
+dependencies {
+    annotationProcessor 'app.krista:extension-impl-anno-processors:1.0.125' // used to generate the extension.json
+    compileOnly 'app.krista:krista-apis:1.0.125' // defines the Krista Service APIs
+    compileOnly 'org.glassfish.hk2:hk2-api:2.6.1' // used to define scope of objects
+    // Telemetry (TelemetryAccess + OpenTelemetry API — provided at runtime by platform container)
+    compileOnly 'com.kristasoft.common:common-core:1.0.54-rc2'
+    compileOnly 'io.opentelemetry:opentelemetry-api:1.36.0'
+    implementation 'com.fasterxml.jackson.core:jackson-core:2.13.4'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.13.4'
+    implementation 'com.fasterxml.jackson.core:jackson-annotations:2.13.4'
+
+    // Krista ESB Infrastructure (replaces Qpid JMS)
+    implementation 'com.kristasoft.common:esb:2.0.+'
+
+    // ActiveMQ Artemis Core Client (for queue management)
+    implementation 'org.apache.activemq:artemis-core-client:2.31.2'
+    implementation 'org.apache.activemq:artemis-commons:2.31.2'
+
+    // Apache Qpid JMS (AMQP 1.0 client for compatibility with Node.js rhea)
+    implementation 'org.apache.qpid:qpid-jms-client:2.5.0'
+
+    // Infinispan ProtoStream (for ESB serialization and .proto generation)
+    annotationProcessor 'org.infinispan.protostream:protostream-processor:5.0.10.Final'
+    compileOnly 'org.infinispan.protostream:protostream:5.0.10.Final'
+    compileOnly 'org.infinispan.protostream:protostream-processor:5.0.10.Final'
+    compileOnly 'org.infinispan:infinispan-api:15.2.0.Final'
+
+    // Protocol Buffers (for Node.js compatibility)
+    implementation 'com.google.protobuf:protobuf-java:3.25.1'
+
+    // Testing
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.9.3'
+    testImplementation 'org.mockito:mockito-core:5.3.1'
+    testImplementation 'org.mockito:mockito-junit-jupiter:5.3.1'
+    testImplementation 'app.krista:krista-apis:1.0.125' // For File, FileRepository, etc.
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+    options.compilerArgs << '-Xlint:unchecked'
+}
+
+// Configure Protocol Buffers
+protobuf {
+    protoc {
+        artifact = 'com.google.protobuf:protoc:3.25.1'
+    }
+    generateProtoTasks {
+        all().each { task ->
+            task.builtins {
+                java {}
+            }
+        }
+    }
+}
+
+// Configure source sets for protobuf
+sourceSets {
+    main {
+        proto {
+            srcDir 'src/main/proto'
+        }
+        java {
+            srcDirs 'build/generated/source/proto/main/java'
+        }
+    }
+}
+
+// Configure processResources to exclude proto files (they're compiled, not resources)
+processResources {
+    exclude '**/*.proto'
+}
+
+// Configure test task
+test {
+    useJUnitPlatform()
+}

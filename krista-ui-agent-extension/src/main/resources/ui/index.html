@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agentic Browser</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f5f5;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        #loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        #loading h1 {
+            font-size: 2em;
+            margin-bottom: 20px;
+        }
+
+        #loading .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        #error {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+
+        #error h1 {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+        }
+
+        #error p {
+            font-size: 1.2em;
+            max-width: 600px;
+            line-height: 1.6;
+        }
+
+        #error .icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+        }
+
+        #iframe-container {
+            display: none;
+            width: 100%;
+            height: 100vh;
+        }
+
+        #web-ui-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading state -->
+    <div id="loading">
+        <h1>Loading Agentic Browser...</h1>
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Error state (URL not configured) -->
+    <div id="error">
+        <div class="icon">⚙️</div>
+        <h1>UI Agent URL Not Configured</h1>
+        <p>To use the Playground, please configure the <strong>UI Agent URL</strong> in the extension's Setup tab, then save and refresh the extension.</p>
+    </div>
+
+    <!-- Iframe container -->
+    <div id="iframe-container">
+        <iframe
+            id="web-ui-iframe"
+            title="Agentic Browser Web Interface"
+            allow="clipboard-read; clipboard-write"
+            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"></iframe>
+    </div>
+
+    <script>
+        // Get URL parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        const uiAgentUrl = urlParams.get('uiAgentUrl');
+
+        // Check if URL is configured
+        if (!uiAgentUrl || uiAgentUrl.trim() === '') {
+            // Show error: URL not configured
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('error').style.display = 'flex';
+        } else {
+            // Load the web UI in iframe
+            const iframe = document.getElementById('web-ui-iframe');
+            const webUIUrl = uiAgentUrl.endsWith('/')
+                ? uiAgentUrl + 'web-ui'
+                : uiAgentUrl + '/web-ui';
+
+            iframe.src = webUIUrl;
+
+            // Handle iframe load events
+            iframe.onload = function() {
+                // Hide loading, show iframe
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('iframe-container').style.display = 'block';
+            };
+
+            iframe.onerror = function() {
+                // Show error if iframe fails to load
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('error').innerHTML = `
+                    <div class="icon">⚠️</div>
+                    <h1>Failed to Load UI Agent Web Interface</h1>
+                    <p>Could not connect to the UI Agent Service at: <strong>${webUIUrl}</strong></p>
+                    <p style="margin-top: 20px;">Please verify the service is running and the URL is correct.</p>
+                `;
+                document.getElementById('error').style.display = 'flex';
+            };
+        }
+    </script>
+</body>
+</html>
+

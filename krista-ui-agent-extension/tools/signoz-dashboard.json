@@ -1,0 +1,1226 @@
+{
+  "title": "Krista UI Agent - Extension Metrics",
+  "description": "Operational health, performance, and error tracking for the Krista UI Agent extension and service",
+  "tags": [
+    "krista",
+    "ui-agent",
+    "extension"
+  ],
+  "layout": [
+    {
+      "h": 3,
+      "i": "prompt_throughput",
+      "w": 6,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "h": 3,
+      "i": "prompt_error_rate",
+      "w": 6,
+      "x": 6,
+      "y": 0
+    },
+    {
+      "h": 3,
+      "i": "prompt_duration_p95",
+      "w": 6,
+      "x": 0,
+      "y": 3
+    },
+    {
+      "h": 3,
+      "i": "validation_failures",
+      "w": 6,
+      "x": 6,
+      "y": 3
+    },
+    {
+      "h": 3,
+      "i": "session_starts",
+      "w": 4,
+      "x": 0,
+      "y": 6
+    },
+    {
+      "h": 3,
+      "i": "session_closes",
+      "w": 4,
+      "x": 4,
+      "y": 6
+    },
+    {
+      "h": 3,
+      "i": "session_start_duration",
+      "w": 4,
+      "x": 8,
+      "y": 6
+    },
+    {
+      "h": 3,
+      "i": "esb_throughput",
+      "w": 6,
+      "x": 0,
+      "y": 9
+    },
+    {
+      "h": 3,
+      "i": "esb_duration",
+      "w": 6,
+      "x": 6,
+      "y": 9
+    },
+    {
+      "h": 3,
+      "i": "esb_errors",
+      "w": 6,
+      "x": 0,
+      "y": 12
+    },
+    {
+      "h": 3,
+      "i": "files_processed",
+      "w": 6,
+      "x": 6,
+      "y": 12
+    },
+    {
+      "h": 3,
+      "i": "llm_calls",
+      "w": 6,
+      "x": 0,
+      "y": 15
+    },
+    {
+      "h": 3,
+      "i": "llm_duration",
+      "w": 6,
+      "x": 6,
+      "y": 15
+    },
+    {
+      "h": 3,
+      "i": "llm_tokens",
+      "w": 6,
+      "x": 0,
+      "y": 18
+    },
+    {
+      "h": 3,
+      "i": "llm_rate_limits",
+      "w": 6,
+      "x": 6,
+      "y": 18
+    },
+    {
+      "h": 3,
+      "i": "browser_actions",
+      "w": 6,
+      "x": 0,
+      "y": 21
+    },
+    {
+      "h": 3,
+      "i": "browser_action_duration",
+      "w": 6,
+      "x": 6,
+      "y": 21
+    },
+    {
+      "h": 3,
+      "i": "selector_cache_hit_rate",
+      "w": 4,
+      "x": 0,
+      "y": 24
+    },
+    {
+      "h": 3,
+      "i": "selector_healing",
+      "w": 4,
+      "x": 4,
+      "y": 24
+    },
+    {
+      "h": 3,
+      "i": "selector_resolution_duration",
+      "w": 4,
+      "x": 8,
+      "y": 24
+    },
+    {
+      "h": 3,
+      "i": "session_executions",
+      "w": 6,
+      "x": 0,
+      "y": 27
+    },
+    {
+      "h": 3,
+      "i": "session_execution_duration",
+      "w": 6,
+      "x": 6,
+      "y": 27
+    },
+    {
+      "h": 3,
+      "i": "esb_timeouts",
+      "w": 6,
+      "x": 0,
+      "y": 30
+    },
+    {
+      "h": 3,
+      "i": "error_by_category",
+      "w": 6,
+      "x": 6,
+      "y": 30
+    },
+    {
+      "h": 4,
+      "i": "execution_log",
+      "w": 12,
+      "x": 0,
+      "y": 33
+    },
+    {
+      "h": 4,
+      "i": "error_log",
+      "w": 12,
+      "x": 0,
+      "y": 37
+    }
+  ],
+  "widgets": [
+    {
+      "id": "prompt_throughput",
+      "title": "Prompt Executions / min",
+      "description": "Rate of prompt executions by status",
+      "panelTypes": "graph",
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "queryName": "A",
+              "dataSource": "metrics",
+              "aggregateAttribute": {
+                "key": "uiagent.prompt.executions",
+                "type": "Sum",
+                "isMonotonic": true
+              },
+              "groupBy": [
+                {
+                  "key": "status",
+                  "type": "tag"
+                }
+              ],
+              "legend": "{{status}}",
+              "reduceTo": "last",
+              "aggregateOperator": "rate"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "prompt_error_rate",
+      "title": "Prompt Error Rate %",
+      "description": "Percentage of prompt executions that failed",
+      "panelTypes": "value",
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "queryName": "A",
+              "dataSource": "metrics",
+              "aggregateOperator": "sum",
+              "aggregateAttribute": {
+                "key": "uiagent.prompt.errors",
+                "type": "Sum",
+                "isMonotonic": true
+              },
+              "legend": "errors"
+            },
+            {
+              "queryName": "B",
+              "dataSource": "metrics",
+              "aggregateOperator": "sum",
+              "aggregateAttribute": {
+                "key": "uiagent.prompt.executions",
+                "type": "Sum",
+                "isMonotonic": true
+              },
+              "legend": "total"
+            }
+          ],
+          "formulaData": [
+            {
+              "expression": "A * 100 / B",
+              "queryName": "F1",
+              "legend": "error_rate_%"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "prompt_duration_p95",
+      "title": "Prompt Duration (P50 / P90 / P99)",
+      "description": "End-to-end prompt execution latency percentiles",
+      "panelTypes": "graph",
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "queryName": "A",
+              "dataSource": "metrics",
+              "aggregateOperator": "sum",
+              "aggregateAttribute": {
+                "key": "uiagent.prompt.duration_ms",
+                "type": "Histogram"
+              },
+              "legend": "P50",
+              "spaceAggregation": "p50",
+              "timeAggregation": "rate"
+            },
+            {
+              "queryName": "B",
+              "dataSource": "metrics",
+              "aggregateOperator": "sum",
+              "aggregateAttribute": {
+                "key": "uiagent.prompt.duration_ms",
+                "type": "Histogram"
+              },
+              "legend": "P90",
+              "spaceAggregation": "p90",
+              "timeAggregation": "rate"
+            },
+            {
+              "queryName": "C",
+              "dataSource": "metrics",
+              "aggregateOperator": "sum",
+              "aggregateAttribute": {
+                "key": "uiagent.prompt.duration_ms",
+                "type": "Histogram"
+              },
+              "legend": "P99",
+              "spaceAggregation": "p99",
+              "timeAggregation": "rate"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "validation_failures",
+      "title": "Validation Failures",
+      "description": "Prompt validation failures over time",
+      "panelTypes": "graph",
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "queryName": "A",
+              "dataSource": "metrics",
+              "aggregateAttribute": {
+                "key": "uiagent.prompt.validation.failures",
+                "type": "Sum",
+                "isMonotonic": true
+              },
+              "legend": "validation_failures/min",
+              "aggregateOperator": "rate"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "session_starts",
+      "title": "Session Starts",
+      "description": "Interactive session starts by status",
+      "panelTypes": "graph",
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "queryName": "A",
+              "dataSource": "metrics",
+              "aggregateAttribute": {
+                "key": "uiagent.session.starts",
+                "type": "Sum",
+                "isMonotonic": true
+              },
+              "groupBy": [
+                {
+                  "key": "status",
+                  "type": "tag"
+                }
+              ],
+              "legend": "{{status}}",
+              "aggregateOperator": "rate"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "session_closes",
+      "title": "Session Closes",
+      "description": "Interactive session closes by status",
+      "panelTypes": "graph",
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "queryName": "A",
+              "dataSource": "metrics",
+              "aggregateAttribute": {
+                "key": "uiagent.session.closes",
+                "type": "Sum",
+                "isMonotonic": true
+              },
+              "groupBy": [
+                {
+                  "key": "status",
+                  "type": "tag"
+                }
+              ],
+              "legend": "{{status}}",
+              "aggregateOperator": "rate"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "session_start_duration",
+      "title": "Session Start Latency (P90)",
+      "description": "Time to start a browser session",
+      "panelTypes": "graph",
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "queryName": "A",
+              "dataSource": "metrics",
+              "aggregateOperator": "sum",
+              "aggregateAttribute": {
+                "key": "uiagent.session.start.duration_ms",
+                "type": "Histogram"
+              },
+              "legend": "P90 session start (ms)",
+              "spaceAggregation": "p90",
+              "timeAggregation": "rate"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "esb_throughput",
+      "title": "ESB Messages / min",
+      "description": "ESB message throughput by API name",
+      "panelTypes": "graph",
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "queryName": "A",
+              "dataSource": "metrics",
+              "aggregateAttribute": {
+                "key": "uiagent.esb.messages.sent",
+                "type": "Sum",
+                "isMonotonic": true
+              },
+              "groupBy": [
+                {
+                  "key": "api_name",
+                  "type": "tag"
+                }
+              ],
+              "legend": "{{api_name}}",
+              "aggregateOperator": "rate"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "esb_duration",
+      "title": "ESB Round-Trip Latency (P50 / P90)",
+      "description": "Time from ESB send to response received",
+      "panelTypes": "graph",
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "queryName": "A",
+              "dataSource": "metrics",
+              "aggregateOperator": "sum",
+              "aggregateAttribute": {
+                "key": "uiagent.esb.response.duration_ms",
+                "type": "Histogram"
+              },
+              "groupBy": [
+                {
+                  "key": "api_name",
+                  "type": "tag"
+                }
+              ],
+              "legend": "P50 {{api_name}}",
+              "spaceAggregation": "p50",
+              "timeAggregation": "rate"
+            },
+            {
+              "queryName": "B",
+              "dataSource": "metrics",
+              "aggregateOperator": "sum",
+              "aggregateAttribute": {
+                "key": "uiagent.esb.response.duration_ms",
+                "type": "Histogram"
+              },
+              "groupBy": [
+                {
+                  "key": "api_name",
+                  "type": "tag"
+                }
+              ],
+              "legend": "P90 {{api_name}}",
+              "spaceAggregation": "p90",
+              "timeAggregation": "rate"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "esb_errors",
+      "title": "ESB Errors",
+      "description": "ESB communication errors by API",
+      "panelTypes": "graph",
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "queryName": "A",
+              "dataSource": "metrics",
+              "aggregateAttribute": {
+                "key": "uiagent.esb.errors",
+                "type": "Sum",
+                "isMonotonic": true
+              },
+              "groupBy": [
+                {
+                  "key": "api_name",
+                  "type": "tag"
+                }
+              ],
+              "legend": "{{api_name}}",
+              "aggregateOperator": "rate"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "files_processed",
+      "title": "Files Processed",
+      "description": "File downloads/uploads by status",
+      "panelTypes": "graph",
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "queryName": "A",
+              "dataSource": "metrics",
+              "aggregateAttribute": {
+                "key": "uiagent.files.processed",
+                "type": "Sum",
+                "isMonotonic": true
+              },
+              "groupBy": [
+                {
+                  "key": "status",
+                  "type": "tag"
+                }
+              ],
+              "legend": "{{status}}",
+              "aggregateOperator": "rate"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "llm_calls",
+      "title": "LLM Calls by Provider",
+      "description": "LLM API call rate by provider and model",
+      "panelTypes": "graph",
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "queryName": "A",
+              "dataSource": "metrics",
+              "aggregateAttribute": {
+                "key": "llm.calls",
+                "type": "Sum",
+                "isMonotonic": true
+              },
+              "groupBy": [
+                {
+                  "key": "provider",
+                  "type": "tag"
+                },
+                {
+                  "key": "model",
+                  "type": "tag"
+                }
+              ],
+              "legend": "{{provider}} / {{model}}",
+              "aggregateOperator": "rate"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "llm_duration",
+      "title": "LLM Call Latency (P50 / P90)",
+      "description": "LLM API response time by provider",
+      "panelTypes": "graph",
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "queryName": "A",
+              "dataSource": "metrics",
+              "aggregateOperator": "sum",
+              "aggregateAttribute": {
+                "key": "llm.call.duration_ms",
+                "type": "Histogram"
+              },
+              "groupBy": [
+                {
+                  "key": "provider",
+                  "type": "tag"
+                }
+              ],
+              "legend": "P50 {{provider}}",
+              "spaceAggregation": "p50",
+              "timeAggregation": "rate"
+            },
+            {
+              "queryName": "B",
+              "dataSource": "metrics",
+              "aggregateOperator": "sum",
+              "aggregateAttribute": {
+                "key": "llm.call.duration_ms",
+                "type": "Histogram"
+              },
+              "groupBy": [
+                {
+                  "key": "provider",
+                  "type": "tag"
+                }
+              ],
+              "legend": "P90 {{provider}}",
+              "spaceAggregation": "p90",
+              "timeAggregation": "rate"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "llm_tokens",
+      "title": "LLM Token Usage",
+      "description": "Input and output tokens by provider",
+      "panelTypes": "graph",
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "queryName": "A",
+              "dataSource": "metrics",
+              "aggregateAttribute": {
+                "key": "llm.tokens.input",
+                "type": "Sum",
+                "isMonotonic": true
+              },
+              "groupBy": [
+                {
+                  "key": "provider",
+                  "type": "tag"
+                }
+              ],
+              "legend": "input {{provider}}",
+              "aggregateOperator": "rate"
+            },
+            {
+              "queryName": "B",
+              "dataSource": "metrics",
+              "aggregateAttribute": {
+                "key": "llm.tokens.output",
+                "type": "Sum",
+                "isMonotonic": true
+              },
+              "groupBy": [
+                {
+                  "key": "provider",
+                  "type": "tag"
+                }
+              ],
+              "legend": "output {{provider}}",
+              "aggregateOperator": "rate"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "llm_rate_limits",
+      "title": "LLM Rate Limits",
+      "description": "Rate limit events by provider",
+      "panelTypes": "graph",
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "queryName": "A",
+              "dataSource": "metrics",
+              "aggregateOperator": "sum",
+              "aggregateAttribute": {
+                "key": "llm.rate_limits",
+                "type": "Sum",
+                "isMonotonic": true
+              },
+              "groupBy": [
+                {
+                  "key": "provider",
+                  "type": "tag"
+                }
+              ],
+              "legend": "{{provider}}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "browser_actions",
+      "title": "Browser Actions by Type",
+      "description": "Browser action execution rate by action type",
+      "panelTypes": "graph",
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "queryName": "A",
+              "dataSource": "metrics",
+              "aggregateAttribute": {
+                "key": "browser.action.total",
+                "type": "Sum",
+                "isMonotonic": true
+              },
+              "groupBy": [
+                {
+                  "key": "action",
+                  "type": "tag"
+                },
+                {
+                  "key": "status",
+                  "type": "tag"
+                }
+              ],
+              "legend": "{{action}} ({{status}})",
+              "aggregateOperator": "rate"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "browser_action_duration",
+      "title": "Browser Action Latency (P90)",
+      "description": "Action execution time by type",
+      "panelTypes": "graph",
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "queryName": "A",
+              "dataSource": "metrics",
+              "aggregateOperator": "sum",
+              "aggregateAttribute": {
+                "key": "browser.action.duration_ms",
+                "type": "Histogram"
+              },
+              "groupBy": [
+                {
+                  "key": "action",
+                  "type": "tag"
+                }
+              ],
+              "legend": "P90 {{action}}",
+              "spaceAggregation": "p90",
+              "timeAggregation": "rate"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "selector_cache_hit_rate",
+      "title": "Selector Cache Hit Rate %",
+      "description": "Percentage of selector lookups served from cache",
+      "panelTypes": "value",
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "queryName": "A",
+              "dataSource": "metrics",
+              "aggregateOperator": "sum",
+              "aggregateAttribute": {
+                "key": "selector.cache.hits",
+                "type": "Sum",
+                "isMonotonic": true
+              },
+              "legend": "hits"
+            },
+            {
+              "queryName": "B",
+              "dataSource": "metrics",
+              "aggregateOperator": "sum",
+              "aggregateAttribute": {
+                "key": "selector.cache.misses",
+                "type": "Sum",
+                "isMonotonic": true
+              },
+              "legend": "misses"
+            }
+          ],
+          "formulaData": [
+            {
+              "expression": "A * 100 / (A + B)",
+              "queryName": "F1",
+              "legend": "cache_hit_rate_%"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "selector_healing",
+      "title": "Selector Healing",
+      "description": "Selector healing attempts and success rate",
+      "panelTypes": "graph",
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "queryName": "A",
+              "dataSource": "metrics",
+              "aggregateAttribute": {
+                "key": "selector.healing.total",
+                "type": "Sum",
+                "isMonotonic": true
+              },
+              "groupBy": [
+                {
+                  "key": "status",
+                  "type": "tag"
+                }
+              ],
+              "legend": "{{status}}",
+              "aggregateOperator": "rate"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "selector_resolution_duration",
+      "title": "Selector Resolution Time",
+      "description": "Selector resolution latency by source (cache vs LLM)",
+      "panelTypes": "graph",
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "queryName": "A",
+              "dataSource": "metrics",
+              "aggregateOperator": "sum",
+              "aggregateAttribute": {
+                "key": "selector.resolution.duration_ms",
+                "type": "Histogram"
+              },
+              "groupBy": [
+                {
+                  "key": "source",
+                  "type": "tag"
+                }
+              ],
+              "legend": "P90 {{source}}",
+              "spaceAggregation": "p90",
+              "timeAggregation": "rate"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "session_executions",
+      "title": "Interactive Session Executions / min",
+      "description": "Interactive session step execution rate by status",
+      "panelTypes": "graph",
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "queryName": "A",
+              "dataSource": "metrics",
+              "aggregateAttribute": {
+                "key": "uiagent.session.executions",
+                "type": "Sum",
+                "isMonotonic": true
+              },
+              "groupBy": [
+                {
+                  "key": "status",
+                  "type": "tag"
+                }
+              ],
+              "legend": "{{status}}",
+              "aggregateOperator": "rate"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "session_execution_duration",
+      "title": "Session Execution Duration (P50 / P90)",
+      "description": "Interactive session step execution latency",
+      "panelTypes": "graph",
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "queryName": "A",
+              "dataSource": "metrics",
+              "aggregateOperator": "sum",
+              "aggregateAttribute": {
+                "key": "uiagent.session.execution.duration_ms",
+                "type": "Histogram"
+              },
+              "legend": "P50",
+              "spaceAggregation": "p50",
+              "timeAggregation": "rate"
+            },
+            {
+              "queryName": "B",
+              "dataSource": "metrics",
+              "aggregateOperator": "sum",
+              "aggregateAttribute": {
+                "key": "uiagent.session.execution.duration_ms",
+                "type": "Histogram"
+              },
+              "legend": "P90",
+              "spaceAggregation": "p90",
+              "timeAggregation": "rate"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "esb_timeouts",
+      "title": "ESB Timeouts",
+      "description": "ESB response timeout events by API \u2014 the most common ESB failure",
+      "panelTypes": "graph",
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "queryName": "A",
+              "dataSource": "metrics",
+              "aggregateAttribute": {
+                "key": "uiagent.esb.timeouts",
+                "type": "Sum",
+                "isMonotonic": true
+              },
+              "groupBy": [
+                {
+                  "key": "api_name",
+                  "type": "tag"
+                }
+              ],
+              "legend": "{{api_name}}",
+              "aggregateOperator": "rate"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "error_by_category",
+      "title": "Errors by Category",
+      "description": "Error breakdown: timeout, connection, validation, rate_limit, not_found, disconnected, unknown",
+      "panelTypes": "graph",
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "queryName": "A",
+              "dataSource": "metrics",
+              "aggregateOperator": "sum",
+              "aggregateAttribute": {
+                "key": "uiagent.prompt.errors",
+                "type": "Sum",
+                "isMonotonic": true
+              },
+              "groupBy": [
+                {
+                  "key": "error_category",
+                  "type": "tag",
+                  "dataType": "string",
+                  "isColumn": false
+                }
+              ],
+              "legend": "{{error_category}}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "execution_log",
+      "title": "Conversation Execution Log",
+      "description": "All prompt executions with conversation_id, status, and duration \u2014 use to trace specific executions",
+      "panelTypes": "list",
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "queryName": "A",
+              "dataSource": "logs",
+              "aggregateOperator": "noop",
+              "filters": {
+                "op": "AND",
+                "items": [
+                  {
+                    "key": {
+                      "key": "body",
+                      "type": "string",
+                      "dataType": "string"
+                    },
+                    "op": "contains",
+                    "value": "Prompt execution completed"
+                  }
+                ]
+              },
+              "orderBy": [
+                {
+                  "columnName": "timestamp",
+                  "order": "desc"
+                }
+              ],
+              "selectColumns": [
+                {
+                  "key": "timestamp",
+                  "type": "",
+                  "dataType": ""
+                },
+                {
+                  "key": "body",
+                  "type": "",
+                  "dataType": ""
+                },
+                {
+                  "key": "conversation_id",
+                  "type": "tag",
+                  "dataType": "string"
+                },
+                {
+                  "key": "request_id",
+                  "type": "tag",
+                  "dataType": "string"
+                },
+                {
+                  "key": "execution_id",
+                  "type": "tag",
+                  "dataType": "string"
+                },
+                {
+                  "key": "session_id",
+                  "type": "tag",
+                  "dataType": "string"
+                },
+                {
+                  "key": "status",
+                  "type": "tag",
+                  "dataType": "string"
+                },
+                {
+                  "key": "duration_ms",
+                  "type": "tag",
+                  "dataType": "string"
+                },
+                {
+                  "key": "workspace_id",
+                  "type": "tag",
+                  "dataType": "string"
+                },
+                {
+                  "key": "invoker_id",
+                  "type": "tag",
+                  "dataType": "string"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "error_log",
+      "title": "Error Log (with Conversation ID)",
+      "description": "All telemetry error logs \u2014 searchable by conversation_id for debugging",
+      "panelTypes": "list",
+      "query": {
+        "queryType": "builder",
+        "builder": {
+          "queryData": [
+            {
+              "queryName": "A",
+              "dataSource": "logs",
+              "aggregateOperator": "noop",
+              "filters": {
+                "op": "AND",
+                "items": [
+                  {
+                    "key": {
+                      "key": "severity_text",
+                      "type": "string",
+                      "dataType": "string"
+                    },
+                    "op": "=",
+                    "value": "ERROR"
+                  }
+                ]
+              },
+              "orderBy": [
+                {
+                  "columnName": "timestamp",
+                  "order": "desc"
+                }
+              ],
+              "selectColumns": [
+                {
+                  "key": "timestamp",
+                  "type": "",
+                  "dataType": ""
+                },
+                {
+                  "key": "body",
+                  "type": "",
+                  "dataType": ""
+                },
+                {
+                  "key": "error_type",
+                  "type": "tag",
+                  "dataType": "string"
+                },
+                {
+                  "key": "error_category",
+                  "type": "tag",
+                  "dataType": "string"
+                },
+                {
+                  "key": "error_message",
+                  "type": "tag",
+                  "dataType": "string"
+                },
+                {
+                  "key": "conversation_id",
+                  "type": "tag",
+                  "dataType": "string"
+                },
+                {
+                  "key": "request_id",
+                  "type": "tag",
+                  "dataType": "string"
+                },
+                {
+                  "key": "execution_id",
+                  "type": "tag",
+                  "dataType": "string"
+                },
+                {
+                  "key": "session_id",
+                  "type": "tag",
+                  "dataType": "string"
+                },
+                {
+                  "key": "workspace_id",
+                  "type": "tag",
+                  "dataType": "string"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "variables": {
+    "workspace_id": {
+      "type": "QUERY",
+      "name": "workspace_id",
+      "description": "Filter by Workspace ID",
+      "queryValue": "SELECT DISTINCT JSONExtractString(labels, 'workspace_id') AS workspace_id FROM signoz_metrics.distributed_time_series_v4 WHERE metric_name = 'uiagent.session.starts' AND JSONExtractString(labels, 'workspace_id') != '' ORDER BY workspace_id",
+      "allSelected": true,
+      "showALLOption": true
+    },
+    "invoker_id": {
+      "type": "QUERY",
+      "name": "invoker_id",
+      "description": "Filter by Invoker ID (extension instance)",
+      "queryValue": "SELECT DISTINCT JSONExtractString(labels, 'invoker_id') AS invoker_id FROM signoz_metrics.distributed_time_series_v4 WHERE metric_name = 'uiagent.session.starts' AND JSONExtractString(labels, 'invoker_id') != '' ORDER BY invoker_id",
+      "allSelected": true,
+      "showALLOption": true
+    },
+    "conversation_id": {
+      "type": "TEXTBOX",
+      "name": "conversation_id",
+      "description": "Search logs by Conversation Execution ID (paste a specific ID to filter)",
+      "textboxValue": ""
+    }
+  }
+}
